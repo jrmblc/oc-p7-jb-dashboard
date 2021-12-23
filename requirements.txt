@@ -2,6 +2,6 @@ pandas
 flask
 dash
 requests
-json
+json==2.0.9
 plotly
 gunicorn
