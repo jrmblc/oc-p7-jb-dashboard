@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
-
 import requests
 import json
-
 import dash
 from dash.dependencies import Input, Output
 import plotly.express as px
