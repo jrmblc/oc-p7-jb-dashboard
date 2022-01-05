@@ -3,12 +3,18 @@ import pandas as pd
 import requests
 import json
 import dash
+import dash_core_components as dcc
+import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.express as px
 
 #==============================================================================
+local_server_api = False
 
-API_URL = "https://oc-p7-jb-api.herokuapp.com/"
+if local_server_api:
+    API_URL = "http://127.0.0.1:5000/"
+else:
+    API_URL = "https://oc-p7-jb-api.herokuapp.com/"
 
 #==============================================================================
 
@@ -25,67 +31,70 @@ app = dash.Dash(__name__)
 server = app.server
 
 
-app.layout = dash.html.Div([
-    
-    dash.html.H1("Home Credit - Customers Default Risk"),
-    
-    dash.html.Div(
+app.layout = html.Div(
+    children=[
+        html.Div(
+            children=[
+                html.Img(src='assets\hcg-logo.png'),
+                html.Div("Customers Credit Risk", className="title"),
+                html.P(" ",
+               ),
+                     ],className="header"
+                   ),
+
+    html.Div(
         children=[
-            dash.html.Div(children="Select a client ID", className="menu-title"),
-            dash.dcc.Dropdown(
+            html.Div("Client ID...", className="menu-title"),
+            dcc.Dropdown(
                     id="id_client",
                     options=[{'label': str(i), 'value': i} for i in id_list],
-                    value=id_list[0]
-                            )
-                    ]
-            ),
+                    value=id_list[0],style={'width': '50%'})
+                 ]
+                ),
+    html.Br(),
+    html.Br(),
+    html.Div(id='prediction',className="answer"),
     
-    dash.html.H3(id='prediction'),
-    dash.html.Div(id='proba_0'),
-    dash.html.Div(id='proba_1'),
-    
-    dash.html.Div(
-        children=[
-            dash.html.Div(children="Predominate features in the composition "+
-                          "of the answer ", className="menu-title"),
-            dash.dcc.Graph(
-                        id='graph'
-                          )
-                 ])
-    ])
+    html.Div(dcc.Graph(id='graph_rate',style={'width': '40%'})),
+           
+    html.Div(dcc.Graph(id='graph_local_ft'))
+            
+    ],className="all")
 
 @app.callback(
-    [Output(component_id='graph', component_property='figure'),
+    [Output(component_id='graph_local_ft', component_property='figure'),
      Output(component_id='prediction', component_property='children'),
-     Output(component_id='proba_0', component_property='children'),
-     Output(component_id='proba_1', component_property='children')],     
+     Output(component_id='graph_rate', component_property='figure')
+     ],     
     [Input(component_id='id_client', component_property='value')]
-    )
+            )
 def update_figure(id_client):
     data_client = data(id_client)
     #--------------------------------------------------------------------------
     if data_client['prediction'] == 0:
-        prediction="Credit approval available for this customer"
+        prediction="Credit is accepted "
     else:
-        prediction="Credit approval not available for this customer"
+        prediction="Credit is declined "
     prediction = 'Answer : '+ prediction 
     #--------------------------------------------------------------------------    
-    proba_0 = 'Success rate: {:0.1f}%'.format(data_client['proba_0']*100)
-    #--------------------------------------------------------------------------  
-    proba_1 = 'Failure rate: {:0.1f}%'.format(data_client['proba_1']*100)
+    df_rate=pd.DataFrame()
+    df_rate['Rate'] = ['Positive','Negative']
+    df_rate['Score'] = data_client['proba']
+
+    fig_rate = px.bar(df_rate, x='Rate', y='Score') 
     #--------------------------------------------------------------------------   
-    df_importance=pd.DataFrame()
-    df_importance['feature'] = data_client[str(id_client)].keys()
-    df_importance['score'] = data_client[str(id_client)].values()
+    df_local_ft=pd.DataFrame()
+    df_local_ft['Local Feature Importance'] = data_client[str(id_client)].keys()
+    df_local_ft['Score'] = data_client[str(id_client)].values()
         
     nb=8 #nb of best and worst scores
-    df_plus = df_importance.sort_values(by='score', ascending=False)[:nb]
-    df_minus = df_importance.sort_values(by='score', ascending=False)[-nb:]
+    df_plus = df_local_ft.sort_values(by='Score', ascending=False)[:nb]
+    df_minus = df_local_ft.sort_values(by='Score', ascending=False)[-nb:]
     df_selected = pd.concat([df_plus,df_minus])
 
-    fig = px.bar(df_selected, x='feature', y='score')
+    fig_local_ft = px.bar(df_selected, x='Local Feature Importance', y='Score')
     #--------------------------------------------------------------------------
-    return fig, prediction, proba_0, proba_1
+    return fig_local_ft, prediction, fig_rate
 
 #==============================================================================
 

@@ -1,0 +1,21 @@
+.header
+{
+    background-color: black;
+    color: white;
+    text-align: center;
+}
+
+.title
+{
+    font: 2em "Fira Sans", sans-serif;
+}
+
+.menu-title
+{
+    font: 1.1em "Fira Sans", sans-serif;
+}
+
+.answer
+{
+    font: bold 1.5em "Fira Sans", sans-serif;
+}
