@@ -1,7 +1,7 @@
 .header
 {
     background-color: black;
-    color: white;
+    color: #f0f0f0;
     text-align: center;
 }
 
@@ -18,4 +18,9 @@
 .answer
 {
     font: bold 1.5em "Fira Sans", sans-serif;
+}
+
+.all
+{
+    background-color: #f0f0f0;
 }

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
+import numpy as np
 import requests
 import json
 import dash
@@ -36,7 +37,7 @@ app.layout = html.Div(
         html.Div(
             children=[
                 html.Img(src='assets\hcg-logo.png'),
-                html.Div("Customers Credit Risk", className="title"),
+                html.Div("Customers Credit Acceptance", className="title"),
                 html.P(" ",
                ),
                      ],className="header"
@@ -48,14 +49,15 @@ app.layout = html.Div(
             dcc.Dropdown(
                     id="id_client",
                     options=[{'label': str(i), 'value': i} for i in id_list],
-                    value=id_list[0],style={'width': '50%'})
+                    value=id_list[0],style={'width': '40%'})
                  ]
                 ),
     html.Br(),
-    html.Br(),
+    html.Div("Answer...", className="menu-title"),
     html.Div(id='prediction',className="answer"),
+    html.Br(),
     
-    html.Div(dcc.Graph(id='graph_rate',style={'width': '40%'})),
+    html.Div(dcc.Graph(id='graph_rate')),
            
     html.Div(dcc.Graph(id='graph_local_ft'))
             
@@ -75,24 +77,31 @@ def update_figure(id_client):
         prediction="Credit is accepted "
     else:
         prediction="Credit is declined "
-    prediction = 'Answer : '+ prediction 
     #--------------------------------------------------------------------------    
     df_rate=pd.DataFrame()
     df_rate['Rate'] = ['Positive','Negative']
     df_rate['Score'] = data_client['proba']
+    df_rate['Color'] = ['green','red']
 
-    fig_rate = px.bar(df_rate, x='Rate', y='Score') 
+    fig_rate = px.bar(df_rate, x='Rate', y='Score',width=600, height=300) 
+    fig_rate.update_traces(marker_color=df_rate['Color'])
+    fig_rate.update_layout(margin=dict(l=25, r=25, t=25, b=25),
+                           paper_bgcolor="#f0f0f0")
     #--------------------------------------------------------------------------   
     df_local_ft=pd.DataFrame()
     df_local_ft['Local Feature Importance'] = data_client[str(id_client)].keys()
     df_local_ft['Score'] = data_client[str(id_client)].values()
+    df_local_ft['Sort'] = df_local_ft['Score'].abs()
+    df_local_ft['Color'] = np.where(df_local_ft['Score']<0, 'red', 'green')
         
-    nb=8 #nb of best and worst scores
-    df_plus = df_local_ft.sort_values(by='Score', ascending=False)[:nb]
-    df_minus = df_local_ft.sort_values(by='Score', ascending=False)[-nb:]
-    df_selected = pd.concat([df_plus,df_minus])
+    nb=25 #nb of best and worst scores
+    df_sorted = df_local_ft.sort_values(by='Sort', ascending=False)[:nb]
 
-    fig_local_ft = px.bar(df_selected, x='Local Feature Importance', y='Score')
+    fig_local_ft = px.bar(df_sorted, x='Local Feature Importance', y='Score',
+                          width=1500, height=600)
+    fig_local_ft.update_traces(marker_color=df_sorted['Color'])
+    fig_local_ft.update_layout(margin=dict(l=25, r=25, t=25, b=25),
+                               paper_bgcolor="#f0f0f0")
     #--------------------------------------------------------------------------
     return fig_local_ft, prediction, fig_rate
 
