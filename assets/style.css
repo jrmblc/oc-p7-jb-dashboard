@@ -1,13 +1,15 @@
 .header
 {
     background-color: black;
+    font: 2em "Fira Sans", sans-serif;
     color: #f0f0f0;
     text-align: center;
 }
 
-.title
+.body-title
 {
-    font: 2em "Fira Sans", sans-serif;
+    font: 1.7em "Fira Sans", sans-serif;
+    text-decoration: underline;
 }
 
 .menu-title
@@ -17,7 +19,7 @@
 
 .answer
 {
-    font: bold 1.5em "Fira Sans", sans-serif;
+    font: bold 2.5em "Fira Sans", sans-serif;
 }
 
 .all

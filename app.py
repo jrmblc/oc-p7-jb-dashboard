@@ -22,22 +22,27 @@ else:
 req_list = requests.get(API_URL+"id_list")
 id_list = json.loads(req_list.content)
 
+req_ft = requests.get(API_URL+"gfi") #global feature importance
+gfi = json.loads(req_ft.content)
+
 def data(id_client):
     req_data = requests.get(API_URL+"api?id="+str(id_client))
     return json.loads(req_data.content)
+
+
+
     
 #==============================================================================
 
 app = dash.Dash(__name__)
 server = app.server
 
-
 app.layout = html.Div(
     children=[
         html.Div(
             children=[
                 html.Img(src='assets\hcg-logo.png'),
-                html.Div("Customers Credit Acceptance", className="title"),
+                html.Div("Customers Credit Acceptance"),
                 html.P(" ",
                ),
                      ],className="header"
@@ -56,21 +61,26 @@ app.layout = html.Div(
     html.Div("Answer...", className="menu-title"),
     html.Div(id='prediction',className="answer"),
     html.Br(),
-    
+    html.Div("Model Proba", className="body-title"),
     html.Div(dcc.Graph(id='graph_rate')),
-           
-    html.Div(dcc.Graph(id='graph_local_ft'))
-            
+    html.Br(),
+    html.Div("Shapley Additive exPlanations (SHAP)", className="body-title"),      
+    html.Div(dcc.Graph(id='graph_shap')),
+    html.Br(),
+    html.Div("Shapley Additive exPlanations and Feature Importance",
+             className="body-title"),
+    html.Div(dcc.Graph(id='graph_merge'))   
     ],className="all")
 
 @app.callback(
-    [Output(component_id='graph_local_ft', component_property='figure'),
-     Output(component_id='prediction', component_property='children'),
-     Output(component_id='graph_rate', component_property='figure')
+    [Output(component_id='graph_merge', component_property='figure'),
+     Output(component_id='graph_shap', component_property='figure'),
+     Output(component_id='graph_rate', component_property='figure'),
+     Output(component_id='prediction', component_property='children')
      ],     
     [Input(component_id='id_client', component_property='value')]
             )
-def update_figure(id_client):
+def update_figure_client(id_client):
     data_client = data(id_client)
     #--------------------------------------------------------------------------
     if data_client['prediction'] == 0:
@@ -79,7 +89,7 @@ def update_figure(id_client):
         prediction="Credit is declined "
     #--------------------------------------------------------------------------    
     df_rate=pd.DataFrame()
-    df_rate['Rate'] = ['Positive','Negative']
+    df_rate['Rate'] = ['For','Against']
     df_rate['Score'] = data_client['proba']
     df_rate['Color'] = ['green','red']
 
@@ -88,23 +98,46 @@ def update_figure(id_client):
     fig_rate.update_layout(margin=dict(l=25, r=25, t=25, b=25),
                            paper_bgcolor="#f0f0f0")
     #--------------------------------------------------------------------------   
-    df_local_ft=pd.DataFrame()
-    df_local_ft['Local Feature Importance'] = data_client[str(id_client)].keys()
-    df_local_ft['Score'] = data_client[str(id_client)].values()
-    df_local_ft['Sort'] = df_local_ft['Score'].abs()
-    df_local_ft['Color'] = np.where(df_local_ft['Score']<0, 'red', 'green')
+    df_shap=pd.DataFrame()
+    df_shap['Feature'] = data_client[str(id_client)].keys()
+    df_shap['Score'] = data_client[str(id_client)].values()
+    df_shap['Sort'] = df_shap['Score'].abs()
+    df_shap['Color'] = np.where(df_shap['Score']<0, 'red', 'green')
         
-    nb=25 #nb of best and worst scores
-    df_sorted = df_local_ft.sort_values(by='Sort', ascending=False)[:nb]
+    nb=25 #nb of features on the graph
+    df_shap = df_shap.sort_values(by='Sort', ascending=False)[:nb]
 
-    fig_local_ft = px.bar(df_sorted, x='Local Feature Importance', y='Score',
+    fig_shap = px.bar(df_shap, x='Feature', y='Score',
                           width=1500, height=600)
-    fig_local_ft.update_traces(marker_color=df_sorted['Color'])
-    fig_local_ft.update_layout(margin=dict(l=25, r=25, t=25, b=25),
+    fig_shap.update_traces(marker_color=df_shap['Color'])
+    fig_shap.update_layout(margin=dict(l=25, r=25, t=25, b=25),
                                paper_bgcolor="#f0f0f0")
     #--------------------------------------------------------------------------
-    return fig_local_ft, prediction, fig_rate
+    df_gfi=pd.DataFrame() #global feature importance
+    df_gfi['Feature'] = gfi['global_feature_importance'].keys()
+    df_gfi['Score'] = gfi['global_feature_importance'].values()
+        
+    df_merge = df_shap.merge(df_gfi, on='Feature')
+    df_merge = df_merge.rename(columns={'Score_x': 'SHAP Score', 
+                                        'Score_y': 'Feature Importance'})
+    
+    fig_merge = px.scatter(df_merge,x='Feature Importance', y='SHAP Score', 
+                           text='Feature', width=1500, height=600)
+    fig_merge.update_traces(marker_color=df_merge['Color'],
+                            textposition="bottom right", textfont_size=12)
+    fig_merge.update_layout(margin=dict(l=25, r=25, t=25, b=25),
+                                     paper_bgcolor="#f0f0f0")
 
+    #--------------------------------------------------------------------------
+    # df_gfi = df_gfi.sort_values(by='Score', ascending=False)[:nb]
+    
+    # fig_gfi = px.bar(df_gfi, x='Global Feature Importance', y='Score',
+    #                       width=1500, height=600)
+    # fig_gfi.update_traces(marker_color='blue')
+    # fig_gfi.update_layout(margin=dict(l=25, r=25, t=25, b=25),
+    #                            paper_bgcolor="#f0f0f0")
+    #--------------------------------------------------------------------------
+    return fig_merge, fig_shap, fig_rate, prediction
 #==============================================================================
 
 if __name__ == '__main__':
