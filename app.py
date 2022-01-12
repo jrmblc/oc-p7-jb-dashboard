@@ -10,6 +10,7 @@ from dash.dependencies import Input, Output
 import plotly.express as px
 
 #==============================================================================
+
 local_server_api = False
 
 if local_server_api:
@@ -29,9 +30,6 @@ def data(id_client):
     req_data = requests.get(API_URL+"api?id="+str(id_client))
     return json.loads(req_data.content)
 
-
-
-    
 #==============================================================================
 
 app = dash.Dash(__name__)
@@ -61,7 +59,6 @@ app.layout = html.Div(
     html.Div("Answer...", className="menu-title"),
     html.Div(id='prediction',className="answer"),
     html.Br(),
-    html.Div("Model Proba", className="body-title"),
     html.Div(dcc.Graph(id='graph_rate')),
     html.Br(),
     html.Div("Shapley Additive exPlanations (SHAP)", className="body-title"),      
@@ -90,10 +87,10 @@ def update_figure_client(id_client):
     #--------------------------------------------------------------------------    
     df_rate=pd.DataFrame()
     df_rate['Rate'] = ['For','Against']
-    df_rate['Score'] = data_client['proba']
+    df_rate['Credit Score'] = data_client['proba']
     df_rate['Color'] = ['green','red']
 
-    fig_rate = px.bar(df_rate, x='Rate', y='Score',width=600, height=300) 
+    fig_rate = px.bar(df_rate, x='Rate', y='Credit Score',width=600, height=300) 
     fig_rate.update_traces(marker_color=df_rate['Color'])
     fig_rate.update_layout(margin=dict(l=25, r=25, t=25, b=25),
                            paper_bgcolor="#f0f0f0")
@@ -138,6 +135,7 @@ def update_figure_client(id_client):
     #                            paper_bgcolor="#f0f0f0")
     #--------------------------------------------------------------------------
     return fig_merge, fig_shap, fig_rate, prediction
+
 #==============================================================================
 
 if __name__ == '__main__':
