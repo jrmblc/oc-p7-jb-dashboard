@@ -104,7 +104,7 @@ def update_figure_client(id_client):
     df_shap['Sort'] = df_shap['Score'].abs()
     df_shap['Color'] = np.where(df_shap['Score']<0, 'red', 'green')
         
-    nb=25 #nb of features on the graph
+    nb=30 #nb of features on the graph
     df_shap = df_shap.sort_values(by='Sort', ascending=False)[:nb]
 
     fig_shap = px.bar(df_shap, x='Feature', y='Score',
