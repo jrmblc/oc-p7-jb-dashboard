@@ -39,7 +39,7 @@ app.layout = html.Div(
     children=[
         html.Div(
             children=[
-                html.Img(src='assets\hcg-logo.png'),
+                html.Img(src='assets\logo.png'),
                 html.Div("Customers Credit Acceptance"),
                 html.P(" ",
                ),
